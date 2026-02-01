@@ -1,7 +1,7 @@
 {
-  "name": "llm-json-parser",
+  "name": "json-llm-repair",
   "version": "0.1.0",
-  "description": "Parse and extract JSON from LLM outputs with multiple repair strategies",
+  "description": "Parse and repair JSON from LLM outputs with multiple strategies",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,7 +9,12 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepublishOnly": "npm run build",
+    "release:patch": "npm version patch -m \"chore(release): %s\" && git push --follow-tags && npm publish",
+    "release:minor": "npm version minor -m \"chore(release): %s\" && git push --follow-tags && npm publish",
+    "release:major": "npm version major -m \"chore(release): %s\" && git push --follow-tags && npm publish",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -26,8 +31,16 @@
     "extract",
     "typescript"
   ],
-  "author": "",
+  "author": "Tiago Gouvêa",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tiagogouvea/json-llm-repair.git"
+  },
+  "homepage": "https://github.com/tiagogouvea/json-llm-repair#readme",
+  "bugs": {
+    "url": "https://github.com/tiagogouvea/json-llm-repair/issues"
+  },
   "dependencies": {
     "jsonrepair": "^3.8.0"
   },
@@ -45,6 +58,7 @@
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

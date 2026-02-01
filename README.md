@@ -1,6 +1,6 @@
-# llm-json-parser
+# json-llm-repair
 
-Parse and extract JSON from LLM outputs with intelligent repair strategies.
+Parse and repair JSON from LLM outputs with intelligent repair strategies.
 
 ## Why?
 
@@ -11,15 +11,15 @@ This library handles these issues automatically, with configurable repair strate
 ## Installation
 
 ```bash
-npm install llm-json-parser
+npm install json-llm-repair
 # or
-yarn add llm-json-parser
+yarn add json-llm-repair
 ```
 
 ## Quick Start
 
 ```typescript
-import { parseFromLLM } from 'llm-json-parser';
+import { parseFromLLM } from 'json-llm-repair';
 
 const llmOutput = 'Sure! Here is the data: {"name": "John", "age": 30} if you need anything else please let me know.';
 const data = parseFromLLM(llmOutput);
@@ -82,6 +82,35 @@ const data = parseFromLLM(llmOutput, { mode: 'repair', schema: UserSchema });
 // Wrapped to: { user: { name: "John", age: 30 } }
 ```
 
+### 6. Unescaped Quotes in Strings
+LLM embeds quotes without proper escaping (repair mode only).
+
+```typescript
+const llmOutput = '{"message": "She said "hello" to me"}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// Fixed to: { message: 'She said "hello" to me' }
+```
+
+> **Note:** May not work reliably with non-ASCII characters (accents, etc).
+
+### 7. Missing Closing Braces or Quotes
+Incomplete JSON from streaming or interrupted responses (repair mode only).
+
+```typescript
+const llmOutput = '{"name": "John", "age": 30';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// Fixed to: { name: "John", age: 30 }
+```
+
+### 8. Duplicate Keys
+Same property appearing multiple times (repair mode only).
+
+```typescript
+const llmOutput = '{"id": 1, "name": "Alice", "id": 2}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// Result: { id: 2, name: "Alice" } (last value wins)
+```
+
 ## Mode Comparison
 
 | Failure Type | Parse Mode | Repair Mode |
@@ -92,6 +121,9 @@ const data = parseFromLLM(llmOutput, { mode: 'repair', schema: UserSchema });
 | Missing quotes in keys | ❌ Throws error | ✅ Fixes with jsonrepair |
 | Trailing commas | ❌ Throws error | ✅ Fixes with jsonrepair |
 | Unquoted keys | ❌ Throws error | ✅ Fixes with jsonrepair |
+| Unescaped quotes in values | ❌ Throws error | ✅ Fixes with jsonrepair |
+| Missing closing braces/quotes | ❌ Throws error | ✅ Fixes with jsonrepair |
+| Duplicate keys in object | ❌ Throws error | ✅ Fixes (last wins) |
 | Missing root object | ❌ Returns as-is | ✅ Wraps (with schema) |
 | Completely invalid JSON | ❌ Throws error | ⚠️ Best effort repair |
 
@@ -159,6 +191,10 @@ Parses JSON from LLM output.
 
 - `hasPossibleJson(str: string): boolean` - Check if string contains JSON braces
 - `isJsonString(str: string): boolean` - Validate if string is valid JSON
+
+## Found an Issue?
+
+If you encounter a JSON output format that this library doesn't handle, please [open an issue](../../issues) with an example. We'll be happy to help and improve the library!
 
 ## License
 

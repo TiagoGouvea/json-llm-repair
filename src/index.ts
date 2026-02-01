@@ -67,14 +67,15 @@ export function parseFromLLM<T = any>(input: string, options?: ParseOptions): T 
  * Parse mode: extract and parse JSON without repair
  */
 function parseOnly(input: string): any {
-  const cleaned = extractOnlyJson(input);
+  // Try to find first complete JSON object
+  const firstJson = findFirstCompleteJson(input);
 
-  if (cleaned.startsWith('Invalid input')) {
+  if (!firstJson) {
     throw new Error('No JSON found in the string.');
   }
 
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(firstJson);
   } catch (error: any) {
     throw new Error('Failed to parse JSON: ' + error.message);
   }
@@ -91,9 +92,9 @@ function parseWithRepair(input: string): any {
   }
 
   // Strategy 1: Try all possible JSON candidates
-  const possibleJsons = findAllPossibleJsons(cleaned);
+  const possibleJson = findAllPossibleJson(cleaned);
 
-  for (const jsonCandidate of possibleJsons) {
+  for (const jsonCandidate of possibleJson) {
     // Try native JSON.parse first (fast path)
     try {
       return JSON.parse(jsonCandidate);
@@ -168,7 +169,7 @@ function extractOnlyJson(str: string): string {
 /**
  * Finds every complete JSON object in the input
  */
-function findAllPossibleJsons(input: string): string[] {
+function findAllPossibleJson(input: string): string[] {
   const candidates: string[] = [];
 
   for (let i = 0; i < input.length; i++) {
