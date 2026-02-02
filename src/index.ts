@@ -124,63 +124,78 @@ function parseWithRepair(input: string): any {
 }
 
 /**
- * Wraps parsed object with root key if schema expects it but it's missing
- * Only applies when schema has a single root object key
+ * Fixes root key mismatches in parsed JSON to match schema expectations
+ * Handles: missing keys, wrong key names, or missing wrapper objects
  */
 function wrapRootIfMissing(parsed: any, schema: z.ZodTypeAny): any {
-  console.log('🔧 wrapRootIfMissing called');
-  console.log('  parsed:', parsed);
-  console.log('  schema instanceof z.ZodObject:', schema instanceof z.ZodObject);
+  // Check if schema is ZodObject using duck typing instead of instanceof
+  // This avoids issues with multiple Zod instances in the dependency tree
+  const isZodObject = schema && typeof schema === 'object' && 'shape' in schema && schema._def?.typeName === 'ZodObject';
 
-  if (!(schema instanceof z.ZodObject)) {
-    console.log('  ❌ Schema is not ZodObject, returning parsed as-is');
+  if (!isZodObject) {
     return parsed;
   }
 
-  const shape = schema.shape;
+  const shape = (schema as any).shape;
   const rootKeys = Object.keys(shape);
-  console.log('  rootKeys:', rootKeys);
-  console.log('  rootKeys.length:', rootKeys.length);
 
   if (rootKeys.length !== 1) {
-    console.log('  ❌ rootKeys.length !== 1, returning parsed as-is');
     return parsed;
   }
 
-  const rootKey = rootKeys[0]!;
-  const rootSchema = shape[rootKey];
-  console.log('  rootKey:', rootKey);
-  console.log('  rootSchema instanceof z.ZodObject:', rootSchema instanceof z.ZodObject);
+  const expectedRootKey = rootKeys[0]!;
+  const rootSchema = shape[expectedRootKey];
 
-  if (!(rootSchema instanceof z.ZodObject)) {
-    console.log('  ❌ rootSchema is not ZodObject, returning parsed as-is');
+  // Already has the correct root key
+  if (parsed && typeof parsed === 'object' && expectedRootKey in parsed) {
     return parsed;
   }
 
-  // Already has the root key
-  const hasRootKey = parsed && typeof parsed === 'object' && rootKey in parsed;
-  console.log('  hasRootKey:', hasRootKey);
+  // Check if parsed has only one key (might be wrong name)
+  const parsedKeys = parsed && typeof parsed === 'object' ? Object.keys(parsed) : [];
 
-  if (hasRootKey) {
-    console.log('  ✅ Already has root key, returning parsed as-is');
-    return parsed;
+  // Case 1: Parsed has a different single key - rename it
+  if (parsedKeys.length === 1) {
+    const actualKey = parsedKeys[0]!;
+    const actualValue = parsed[actualKey];
+
+    // Check if types are compatible
+    const expectedTypeName = rootSchema._def?.typeName;
+    const actualIsArray = Array.isArray(actualValue);
+    const actualIsObject = typeof actualValue === 'object' && !actualIsArray;
+
+    const isCompatible =
+      (expectedTypeName === 'ZodArray' && actualIsArray) ||
+      (expectedTypeName === 'ZodObject' && actualIsObject);
+
+    if (isCompatible) {
+      // Validate if the actual value matches the expected schema
+      const validation = rootSchema.safeParse(actualValue);
+
+      if (validation.success) {
+        console.log(`✅ json-llm-repair: Renamed root key "${actualKey}" → "${expectedRootKey}"`);
+        return { [expectedRootKey]: actualValue };
+      }
+    }
   }
 
-  // Check if parsed has all children of the expected root
-  const childShape = rootSchema.shape;
-  const childKeys = Object.keys(childShape);
-  console.log('  childKeys:', childKeys);
+  // Case 2: Check if rootSchema is ZodObject and parsed matches its children (wrap it)
+  const isRootZodObject = rootSchema && typeof rootSchema === 'object' && 'shape' in rootSchema && rootSchema._def?.typeName === 'ZodObject';
 
-  const hasAllChildren =
-    parsed && typeof parsed === 'object' && childKeys.every((k) => k in parsed);
-  console.log('  hasAllChildren:', hasAllChildren);
+  if (isRootZodObject) {
+    const childShape = rootSchema.shape;
+    const childKeys = Object.keys(childShape);
+    const hasAllChildren =
+      parsed && typeof parsed === 'object' && childKeys.every((k) => k in parsed);
 
-  if (hasAllChildren) {
-    console.log('  ✅ Wrapping with root key:', rootKey);
-    return { [rootKey]: parsed };
+    if (hasAllChildren) {
+      console.log(`✅ json-llm-repair: Wrapped missing root key "${expectedRootKey}"`);
+      return { [expectedRootKey]: parsed };
+    }
   }
 
-  console.log('  ❌ Not all children present, returning parsed as-is');
+  // Could not fix the structure
+  console.log(`❌ json-llm-repair: Could not fix root key mismatch for "${expectedRootKey}"`);
   return parsed;
 }
 

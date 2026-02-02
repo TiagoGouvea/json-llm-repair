@@ -114,6 +114,26 @@ const data = parseFromLLM(llmOutput, { mode: 'repair' });
 // Result: { id: 2, name: "Alice" } (last value wins)
 ```
 
+### 9. Wrong Root Key Name
+LLM uses a different name for the root property (repair mode + schema).
+
+```typescript
+import { z } from 'zod';
+
+const RankingSchema = z.object({
+  rankedKnowledge: z.array(
+    z.object({
+      id: z.string(),
+      score: z.number()
+    })
+  )
+});
+
+const llmOutput = '{"ranking": [{"id": "1", "score": 0.9}]}';
+const data = parseFromLLM(llmOutput, { mode: 'repair', schema: RankingSchema });
+// Renamed to: { rankedKnowledge: [{ id: "1", score: 0.9 }] }
+```
+
 ## Mode Comparison
 
 | Failure Type | Parse Mode | Repair Mode |
@@ -128,6 +148,7 @@ const data = parseFromLLM(llmOutput, { mode: 'repair' });
 | Missing closing braces/quotes | ❌ Throws error | ✅ Fixes |
 | Duplicate keys in object | ❌ Throws error | ✅ Fixes (last wins) |
 | Missing root object | ❌ Returns as-is | ✅ Wraps (with schema) |
+| Wrong root key name | ❌ Returns as-is | ✅ Renames (with schema) |
 | Completely invalid JSON | ❌ Throws error | ⚠️ Best effort repair |
 
 ## Modes

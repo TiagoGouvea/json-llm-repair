@@ -19,7 +19,7 @@ describe('parseFromLLM', () => {
 
       test('extracts JSON from markdown code blocks', () => {
         const llmOutput = `Here's your data:
-\`\`\`json
+\`\`\`json 
 {"name": "John", "age": 30}
 \`\`\``;
         const result = parseFromLLM(llmOutput);
@@ -151,6 +151,55 @@ describe('parseFromLLM', () => {
         const llmOutput = '{"value": "test"}';
         const result = parseFromLLM(llmOutput, { mode: 'repair', schema: StringSchema });
         expect(result).toEqual({ value: 'test' });
+      });
+    });
+
+    describe('wrong root key name', () => {
+      test('renames root key when LLM uses wrong name for array', () => {
+        const schema = z.object({
+          rankedKnowledge: z.array(
+            z.object({
+              id: z.string(),
+              score: z.number(),
+            }),
+          ),
+        });
+
+        const llmOutput = '{"ranking": [{"id": "1", "score": 0.9}, {"id": "2", "score": 0.8}]}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair', schema });
+        expect(result).toEqual({
+          rankedKnowledge: [
+            { id: '1', score: 0.9 },
+            { id: '2', score: 0.8 },
+          ],
+        });
+      });
+
+      test('renames root key when LLM uses wrong name for object', () => {
+        const schema = z.object({
+          user: z.object({
+            name: z.string(),
+            age: z.number(),
+          }),
+        });
+
+        const llmOutput = '{"person": {"name": "John", "age": 30}}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair', schema });
+        expect(result).toEqual({
+          user: { name: 'John', age: 30 },
+        });
+      });
+
+      test('does not rename when types are incompatible', () => {
+        const schema = z.object({
+          users: z.array(z.object({ name: z.string() })),
+        });
+
+        // LLM returned object instead of array
+        const llmOutput = '{"user": {"name": "John"}}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair', schema });
+        // Should not rename because types don't match
+        expect(result).toEqual({ user: { name: 'John' } });
       });
     });
 
