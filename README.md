@@ -1,5 +1,8 @@
 # json-llm-repair
 
+[![npm version](https://badge.fury.io/js/json-llm-repair.svg)](https://www.npmjs.com/package/json-llm-repair)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Parse and repair JSON from LLM outputs with intelligent repair strategies.
 
 ## Why?
@@ -118,11 +121,11 @@ const data = parseFromLLM(llmOutput, { mode: 'repair' });
 | Text before/after JSON | ✅ Extracts | ✅ Extracts |
 | JSON in markdown blocks | ✅ Extracts | ✅ Extracts |
 | Concatenated JSONs | ✅ Returns first | ✅ Returns first |
-| Missing quotes in keys | ❌ Throws error | ✅ Fixes with jsonrepair |
-| Trailing commas | ❌ Throws error | ✅ Fixes with jsonrepair |
-| Unquoted keys | ❌ Throws error | ✅ Fixes with jsonrepair |
-| Unescaped quotes in values | ❌ Throws error | ✅ Fixes with jsonrepair |
-| Missing closing braces/quotes | ❌ Throws error | ✅ Fixes with jsonrepair |
+| Missing quotes in keys | ❌ Throws error | ✅ Fixes |
+| Trailing commas | ❌ Throws error | ✅ Fixes |
+| Unquoted keys | ❌ Throws error | ✅ Fixes |
+| Unescaped quotes in values | ❌ Throws error | ✅ Fixes |
+| Missing closing braces/quotes | ❌ Throws error | ✅ Fixes |
 | Duplicate keys in object | ❌ Throws error | ✅ Fixes (last wins) |
 | Missing root object | ❌ Returns as-is | ✅ Wraps (with schema) |
 | Completely invalid JSON | ❌ Throws error | ⚠️ Best effort repair |

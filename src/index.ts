@@ -128,29 +128,59 @@ function parseWithRepair(input: string): any {
  * Only applies when schema has a single root object key
  */
 function wrapRootIfMissing(parsed: any, schema: z.ZodTypeAny): any {
-  if (!(schema instanceof z.ZodObject)) return parsed;
+  console.log('🔧 wrapRootIfMissing called');
+  console.log('  parsed:', parsed);
+  console.log('  schema instanceof z.ZodObject:', schema instanceof z.ZodObject);
+
+  if (!(schema instanceof z.ZodObject)) {
+    console.log('  ❌ Schema is not ZodObject, returning parsed as-is');
+    return parsed;
+  }
 
   const shape = schema.shape;
   const rootKeys = Object.keys(shape);
-  if (rootKeys.length !== 1) return parsed;
+  console.log('  rootKeys:', rootKeys);
+  console.log('  rootKeys.length:', rootKeys.length);
+
+  if (rootKeys.length !== 1) {
+    console.log('  ❌ rootKeys.length !== 1, returning parsed as-is');
+    return parsed;
+  }
 
   const rootKey = rootKeys[0]!;
   const rootSchema = shape[rootKey];
-  if (!(rootSchema instanceof z.ZodObject)) return parsed;
+  console.log('  rootKey:', rootKey);
+  console.log('  rootSchema instanceof z.ZodObject:', rootSchema instanceof z.ZodObject);
+
+  if (!(rootSchema instanceof z.ZodObject)) {
+    console.log('  ❌ rootSchema is not ZodObject, returning parsed as-is');
+    return parsed;
+  }
 
   // Already has the root key
-  if (parsed && typeof parsed === 'object' && rootKey in parsed) return parsed;
+  const hasRootKey = parsed && typeof parsed === 'object' && rootKey in parsed;
+  console.log('  hasRootKey:', hasRootKey);
+
+  if (hasRootKey) {
+    console.log('  ✅ Already has root key, returning parsed as-is');
+    return parsed;
+  }
 
   // Check if parsed has all children of the expected root
   const childShape = rootSchema.shape;
   const childKeys = Object.keys(childShape);
+  console.log('  childKeys:', childKeys);
+
   const hasAllChildren =
     parsed && typeof parsed === 'object' && childKeys.every((k) => k in parsed);
+  console.log('  hasAllChildren:', hasAllChildren);
 
   if (hasAllChildren) {
+    console.log('  ✅ Wrapping with root key:', rootKey);
     return { [rootKey]: parsed };
   }
 
+  console.log('  ❌ Not all children present, returning parsed as-is');
   return parsed;
 }
 
