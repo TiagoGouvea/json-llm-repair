@@ -1,6 +1,6 @@
 {
   "name": "json-llm-repair",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Parse and repair JSON from LLM outputs with multiple strategies",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
