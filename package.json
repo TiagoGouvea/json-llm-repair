@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",
-    "release:precheck": "npm access ls-collaborators $npm_package_name --registry https://registry.npmjs.org/ > /dev/null",
+    "release:precheck": "npm whoami --registry https://registry.npmjs.org/ || npm login --registry https://registry.npmjs.org/",
     "release:patch": "npm run release:precheck && npm version patch -m \"chore(release): %s\" && git push --follow-tags && npm publish --registry https://registry.npmjs.org/",
     "release:minor": "npm run release:precheck && npm version minor -m \"chore(release): %s\" && git push --follow-tags && npm publish --registry https://registry.npmjs.org/",
     "release:major": "npm run release:precheck && npm version major -m \"chore(release): %s\" && git push --follow-tags && npm publish --registry https://registry.npmjs.org/",
