@@ -13,7 +13,6 @@ describe('Debug qwen-max case', () => {
         favoriteBand: z.string(),
       }),
     });
-
     const result = parseFromLLM(llmOutput, { mode: 'repair', schema });
 
     console.log('\n🔍 Debug info:');

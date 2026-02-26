@@ -216,6 +216,99 @@ Parses JSON from LLM output.
 - `hasPossibleJson(str: string): boolean` - Check if string contains JSON braces
 - `isJsonString(str: string): boolean` - Validate if string is valid JSON
 
+## Additional Cases Handled
+
+<details>
+<summary><strong>Click to expand</strong> - See all edge cases and extended features</summary>
+
+### Partial Constants (Repair Mode)
+LLM streaming interrupted or incomplete responses.
+
+```typescript
+const llmOutput = '{"flag": tru, "value": nul}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { flag: true, value: null }
+```
+
+**Supported partial values:**
+- `tru` → `true`
+- `fals` → `false`
+- `nul` → `null`
+
+### Extended Null Aliases (Repair Mode)
+Alternative null representations from different programming contexts.
+
+```typescript
+const llmOutput = '{"value": none, "other": nil}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { value: null, other: null }
+```
+
+**Supported aliases:**
+- `none` → `null` (Python-style)
+- `nil` → `null` (Ruby/Lua-style)
+
+### Case-Insensitive Constants (Repair Mode)
+Handle constants in different cases.
+
+```typescript
+const llmOutput = '{"flag": TRUE, "empty": NULL}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { flag: true, empty: null }
+```
+
+**Supported:**
+- `TRUE` / `True` → `true`
+- `FALSE` / `False` → `false`
+- `NULL` / `Null` → `null`
+
+### Incomplete Strings (Repair Mode)
+Strings missing closing quotes.
+
+```typescript
+const llmOutput = '{"message": "Hello world}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { message: "Hello world" }
+```
+
+### Incomplete Numbers (Repair Mode)
+Numbers with trailing dots or incomplete decimals.
+
+```typescript
+const llmOutput = '{"price": 123.}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { price: 123 }
+```
+
+### Incomplete Arrays (Repair Mode)
+Arrays missing closing brackets.
+
+```typescript
+const llmOutput = '{"items": [1, 2, 3}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { items: [1, 2, 3] }
+```
+
+### Empty Values (Repair Mode)
+Empty object values converted to null.
+
+```typescript
+const llmOutput = '{"key": }';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { key: null }
+```
+
+### Scientific Notation
+Standard scientific notation support.
+
+```typescript
+const llmOutput = '{"value": 1.5e3}';
+const data = parseFromLLM(llmOutput, { mode: 'repair' });
+// → { value: 1500 }
+```
+
+</details>
+
 ## Found an Issue?
 
 If you encounter a JSON output format that this library doesn't handle, please [open an issue](../../issues) with an example. We'll be happy to help and improve the library!

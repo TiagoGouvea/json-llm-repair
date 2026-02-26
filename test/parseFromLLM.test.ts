@@ -270,6 +270,87 @@ describe('parseFromLLM', () => {
         expect(result).toEqual({ x: 3, y: 4 });
       });
     });
+
+    describe('missing commas in objects', () => {
+      test('handles single-line object without commas', () => {
+        const llmOutput = '{"a": 1 "b": 2 "c": 3}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ a: 1, b: 2, c: 3 });
+      });
+
+      test('handles multi-line object without commas', () => {
+        const llmOutput = `{
+  "name": "John"
+  "age": 30
+  "city": "NY"
+}`;
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ name: 'John', age: 30, city: 'NY' });
+      });
+
+      test('handles nested object with missing commas', () => {
+        const llmOutput = '{"user": {"name": "John" "age": 30} "active": true}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({
+          user: { name: 'John', age: 30 },
+          active: true,
+        });
+      });
+
+      test('handles missing commas and unquoted keys', () => {
+        const llmOutput = '{name: "John" age: 30}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ name: 'John', age: 30 });
+      });
+    });
+
+    describe('incomplete JSON structures', () => {
+      test('handles string missing closing quote', () => {
+        const llmOutput = '{"message": "Hello world}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ message: 'Hello world' });
+      });
+
+      test('handles number with trailing dot', () => {
+        const llmOutput = '{"price": 123.}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ price: 123 });
+      });
+
+      test('handles array missing closing bracket', () => {
+        const llmOutput = '{"items": [1, 2, 3}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ items: [1, 2, 3] });
+      });
+
+      test('handles array with trailing comma', () => {
+        const llmOutput = '{"items": [1, 2, 3,}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ items: [1, 2, 3] });
+      });
+
+      test('handles nested incomplete array', () => {
+        const llmOutput = '{"data": [[1, 2], [3, 4}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ data: [[1, 2], [3, 4]] });
+      });
+    });
+
+    describe('special number formats', () => {
+      test('handles scientific notation', () => {
+        const llmOutput = '{"value": 1.5e3}';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ value: 1500 });
+      });
+    });
+
+    describe('empty values', () => {
+      test('handles empty value in object', () => {
+        const llmOutput = '{"key": }';
+        const result = parseFromLLM(llmOutput, { mode: 'repair' });
+        expect(result).toEqual({ key: null });
+      });
+    });
   });
 
   describe('mode parameter', () => {

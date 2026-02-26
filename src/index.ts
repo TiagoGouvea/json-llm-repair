@@ -82,6 +82,28 @@ function parseOnly(input: string): any {
 }
 
 /**
+ * Pre-processes JSON text to fix common LLM issues before parsing
+ */
+function preprocessJson(text: string): string {
+  // 1. Complete partial boolean/null constants
+  // Match: tru, fals, nul (but not true, false, null)
+  // Lookahead: must be followed by comma, closing brace/bracket, or whitespace
+  text = text.replace(/:\s*(tru)(?=[,}\]\s]|$)/g, ': true');
+  text = text.replace(/:\s*(fals)(?=[,}\]\s]|$)/g, ': false');
+  text = text.replace(/:\s*(nul)(?=[,}\]\s]|$)/g, ': null');
+
+  // 2. Extended null aliases (none, nil)
+  text = text.replace(/:\s*(none|nil)(?=[,}\]\s]|$)/g, ': null');
+
+  // 3. Case-insensitive constants
+  text = text.replace(/:\s*TRUE(?=[,}\]\s]|$)/gi, ': true');
+  text = text.replace(/:\s*FALSE(?=[,}\]\s]|$)/gi, ': false');
+  text = text.replace(/:\s*NULL(?=[,}\]\s]|$)/gi, ': null');
+
+  return text;
+}
+
+/**
  * Repair mode: multiple strategies with repair
  */
 function parseWithRepair(input: string): any {
@@ -91,8 +113,11 @@ function parseWithRepair(input: string): any {
     throw new Error('No JSON found in the string.');
   }
 
+  // Pre-process to fix common LLM issues
+  const preprocessed = preprocessJson(cleaned);
+
   // Strategy 1: Try all possible JSON candidates
-  const possibleJson = findAllPossibleJson(cleaned);
+  const possibleJson = findAllPossibleJson(preprocessed);
 
   for (const jsonCandidate of possibleJson) {
     // Try native JSON.parse first (fast path)
@@ -110,7 +135,7 @@ function parseWithRepair(input: string): any {
   }
 
   // Strategy 2: Fallback to first complete JSON
-  const firstJson = findFirstCompleteJson(cleaned);
+  const firstJson = findFirstCompleteJson(preprocessed);
   if (firstJson) {
     try {
       return JSON.parse(firstJson);
